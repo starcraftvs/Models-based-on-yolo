@@ -1,0 +1,43 @@
+# parameters
+depth_multiple: 0.33  # model depth multiple
+width_multiple: 0.50  # layer channel multiple
+
+# yolov5 backbone
+backbone:
+  # [from, number, module, args]  448,448,3
+  [[-1, 1, Focus, [64, 3]],  #224,224,32
+   [-1, 1, DWConv, [64, 3, 2]],  #112,112,32
+   [-1, 1, Conv, [128, 1, 1]],  #112,112,128
+   [-1, 1, DWConv, [128, 3, 2]],
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, DWConv, [256, 3, 1]],
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, DWConv, [256, 3, 2]],
+   [-1, 1, Conv, [512, 1, 1]],
+   [-1, 1, DWConv, [512, 3, 1]],
+   [-1, 1, Conv, [512, 1, 1]],
+   [-1, 1, DWConv, [512, 3, 2]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 1]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 1]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 1]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 1]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 1]],
+   [-1, 1, Conv, [1024, 1, 1]],
+   [-1, 1, DWConv, [1024, 3, 2]],
+   [-1, 1, Conv, [2048, 1, 1]],
+   [-1, 1, DWConv, [2048, 3, 2]],
+   [-1, 1, Conv, [2048, 1, 1]],
+  ]
+classify:
+  [
+    #[from,number,module,args]
+    [-1, 1, Avgpool, [4,2]],
+    [-1, 1, FC, [1422]],
+    #crossentropyloss自带softmax
+    #[-1, 1, nn.Softmax,[1]]
+  ]
