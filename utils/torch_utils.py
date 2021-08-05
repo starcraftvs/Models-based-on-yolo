@@ -8,15 +8,15 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+#设置初始化种子，使得每次随机初始化的值相同，之后可以复现
 def init_seeds(seed=0):
     torch.manual_seed(seed)
 
     # Speed-reproducibility tradeoff https://pytorch.org/docs/stable/notes/randomness.html
-    if seed == 0:  # slower, more reproducible
+    if seed == 0:  # 更慢，但更容易复现，还是要再看下？？？？？，seed为0，即为固定seed
         cudnn.deterministic = True
         cudnn.benchmark = False
-    else:  # faster, less reproducible
+    else:  # 更快，但难以复现，这两个函数设置要不要根据网络，每个iteration搜索最合适的计算方法
         cudnn.deterministic = False
         cudnn.benchmark = True
 

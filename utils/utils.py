@@ -29,7 +29,7 @@ matplotlib.rc('font', **{'size': 11})
 # Prevent OpenCV from multithreading (to use PyTorch DataLoader)
 cv2.setNumThreads(0)
 
-
+#设置随机初始化种子，使得每次随机初始化的值一样
 def init_seeds(seed=0):
     random.seed(seed)
     np.random.seed(seed)

@@ -2,7 +2,7 @@ import math
 
 import torch
 from torchvision import transforms
-from .transforms import ToTensor
+from .transform import ToTensor
 #transform 图片并进行归一化（感觉不需要）
 def transforms_noaug_train(
         img_size=[224,224]   #img_size
@@ -19,7 +19,7 @@ def transforms_noaug_train(
     ]
     #转换成Tensor
     tfl += [
-        transforms.ToTensor(),
+        ToTensor(),
     #     transforms.Normalize(
     #         mean=torch.tensor(mean),
     #         std=torch.tensor(std))
@@ -32,5 +32,6 @@ def create_transform(input_size):
         img_size = input_size[-2:]
     else:
         img_size = input_size
-    transform=transforms_noaug_train(img_size=input_size)
+    transform=transforms_noaug_train(img_size)
+    print()
     return transform
