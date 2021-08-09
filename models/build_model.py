@@ -90,7 +90,7 @@ def parse_model(md, ch):  # model_dict, input_channels(3)
             #     e = math.log(c2 / ch[1]) / math.log(2)
             #     c2 = int(ch[1] * ex ** e)
             # if m != Focus:
-            c2 = make_divisible(c2 * gw, 8)
+            #c2 = make_divisible(c2 * gw, 8)
 
             # Experimental
             # if i > 0 and args[0] != no:  # channel expansion factor

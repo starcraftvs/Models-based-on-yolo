@@ -15,7 +15,7 @@ from utils.utils import *
 import yaml
 import torch.nn as nn
 #训练超参,目前只用lr
-hyp = {'lr0': 0.0001,  # initial learning rate (SGD=1E-2, Adam=1E-3)
+hyp = {'lr0': 0.01,  # initial learning rate (SGD=1E-2, Adam=1E-3)
     #    'momentum': 0.937,  # SGD momentum
     #    'weight_decay': 5e-4,  # optimizer weight decay
     #    'giou': 0.05,  # giou loss gain
@@ -46,8 +46,8 @@ print(hyp)
 #获取训练参数
 config_parser = parser = argparse.ArgumentParser(description='Training Config', add_help=False)
 #有没有config文件
-parser.add_argument('-c', '--config', default='', type=str, metavar='FILE',
-                    help='YAML config file specifying default arguments')
+# parser.add_argument('-c', '--config', default='', type=str, metavar='FILE',
+#                     help='YAML config file specifying default arguments')
 #input_size
 parser.add_argument('--input_size', type=tuple, default=[488,488],
                     help='input_size default(3,244,244)')
@@ -55,8 +55,14 @@ parser.add_argument('--input_size', type=tuple, default=[488,488],
 parser.add_argument('--batch_size', type=int, default=2,
                     help='batch_size')
 #训练路径
-parser.add_argument('--train_dir', type=str, default='/home/gukai/research/Models-based-on-yolo/correct_images/train',
+parser.add_argument('--train_dir', type=str, default='/home/gukai/research/pytorch-image-models/correct_images/train',
                     help='train_data dir')
+#数据文件夹名
+parser.add_argument('--data_dir', type=str, default='un_rectify',
+                    help='name of data_folder')
+#label文件夹名(可以与数据文件夹名相同)
+parser.add_argument('--label_dir', type=str, default='label3',
+                    help='name of label_folder')
 #验证路径
 parser.add_argument('--val_dir', type=str, default='/fast_data2/India/TranData/RussiaBiscuits/RussiaBiscuits_wft_0715',
                     help='val_dir')
@@ -64,40 +70,41 @@ parser.add_argument('--val_dir', type=str, default='/fast_data2/India/TranData/R
 parser.add_argument('--epochs', type=int, default=10000,
                     help='epochs')
 #模型文件
-parser.add_argument('--config_file', type=str,default='models/MobileNet.yaml',
+parser.add_argument('--config_file', type=str,default='models/Homography.yaml',
                     help='model config-file')
 
 #输出地址
-parser.add_argument('--output_dir', type=str,default='output/210805',
+parser.add_argument('--output_dir', type=str,default='output/210809',
                     help='output_dir to save model')
 
 #是否继续上次训练
-parser.add_argument('--resume', action='store_true', default=False,
+parser.add_argument('--resume', action='store_true',default=False,
                     help='whether to resume')
 
 
 def _parse_args():
     # Do we have a config file to parse?
-    args_config, remaining = config_parser.parse_known_args()
-    if args_config.config:
-        with open(args_config.config, 'r') as f:
-            cfg = yaml.safe_load(f)
-            parser.set_defaults(**cfg)
+    # args_config, remaining = config_parser.parse_known_args()
+    # if args_config.config:
+    #     with open(args_config.config, 'r') as f:
+    #         cfg = yaml.safe_load(f)
+    #         parser.set_defaults(**cfg)
 
-    # The main arg parser parses the rest of the args, the usual
-    # defaults will have been overridden if config file specified.
-    args = parser.parse_args(remaining)
+    # # The main arg parser parses the rest of the args, the usual
+    # # defaults will have been overridden if config file specified.
+    # args = parser.parse_args(remaining)
 
-    # Cache the args as a text string to save them in the output dir later
-    args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
-    return args, args_text
+    # # Cache the args as a text string to save them in the output dir later
+    # args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
+    args=config_parser.parse_args()
+    return args
 
 
 
 
 def train_reg(hyp):
     #获取参数
-    args, args_text = _parse_args()
+    args = _parse_args()
     epochs=args.epochs
     output_dir=args.output_dir
     epochs = args.epochs  # 300
@@ -106,27 +113,21 @@ def train_reg(hyp):
     init_seeds(1)
     #获取数据，并transform
     transforms=create_transform(args.input_size)
-    train_dataset=Reg_DataSet(root_dir=args.train_dir,transforms=transforms,data_dir='un_rectify',label_dir='label2')
+    train_dataset=Reg_DataSet(root_dir=args.train_dir,transforms=transforms,data_dir=args.data_dir,label_dir=args.label_dir)
     #回归的vector长度
     n_v=3
     #load数据
     train_loader=DataLoader(train_dataset,batch_size=batch_size)
-    #删除之前结果
 
-    #创建模型
-    model=Model(args.config_file)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
     #数据量
     last_idx=len(train_dataset)-1
-    #loss function
-    loss_fn=nn.SmoothL1Loss()
-    #优化器
-    optimizer = torch.optim.Adam(model.parameters(), lr=hyp['lr0'])
+
     #设置保存模型及log的路径
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     log_file=os.path.join(output_dir,'log.txt')
+    #设置跑训练的device
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     #要不要从保存处重跑
     if args.resume==True:
         #如果要，第几个epoch
@@ -139,13 +140,19 @@ def train_reg(hyp):
         model.to(device)
         #如果不要，重新create模型
     else:
+        #删除之前结果
         start_epoch=0
         model=Model(args.config_file)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
         model.to(device)
+    #loss function
+    loss_fn=nn.SmoothL1Loss()
+    #优化器
+    optimizer = torch.optim.SGD(model.parameters(), lr=hyp['lr0'])
     #跑多少个epoch
+    i=0 #记录跑了多少iteration
+    running_loss=0
     for epoch in range(start_epoch,epochs):
-        i=0
         for batch_idx, (input, target) in enumerate(train_loader):
             last_batch = batch_idx == last_idx
             #target=torch.eye(num_classes)[target,:]
@@ -158,10 +165,11 @@ def train_reg(hyp):
             loss=loss_fn(predict,target)
             loss.backward()
             optimizer.step()
-
-            if i%100==0:
-                print(loss)
             i+=1
+            running_loss=(running_loss*(i-1)+loss.item())/(i)
+            if i%100==0:
+                print(running_loss)
+                print('cur loss: ',loss.item())
         #保存模型，模型名为epoch数+.pth
         if (epoch+1)%25==0:
             model_path=os.path.join(output_dir,str(epoch)+'.pth')
@@ -169,7 +177,7 @@ def train_reg(hyp):
             print(model_path)
             #记录log，即每25个epoch的loss
             with open(log_file,'a') as f:
-                f.write(str(epoch)+' '+str(loss.item))
+                f.write(str(epoch)+' '+str(running_loss))
                 f.write('\n')
 
 train_reg(hyp)
