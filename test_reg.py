@@ -7,6 +7,7 @@ import os
 import PIL
 from constants import *
 import argparse
+import torch.nn as nn
 #获取训练参数
 config_parser = parser = argparse.ArgumentParser(description='Training Config', add_help=False)
 #有没有config文件
@@ -39,9 +40,10 @@ parser.add_argument('--output_dir', type=str,default='output/210805',
 parser.add_argument('--resume', action='store_true',default=False,
                     help='whether to resume')
 transforms=create_transform((3,488,488))
-model_dir='/home/gukai/research/Models-based-on-yolo/output/210809/99.pth'
-src_path='/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train/un_rectify'
-dst_path='/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train/pred_label'
+model_dir='/home/gukai/research/Models-based-on-yolo/output/try/149.pth'
+src_path='/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train/img2test'
+dst_path='/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train/pred_label2'
+loss_fn=nn.L1Loss()
 if not os.path.exists(dst_path):
     os.makedirs(dst_path)
 model=torch.load(model_dir)
@@ -49,11 +51,22 @@ for img_file in os.listdir(src_path):
     img_path=os.path.join(src_path,img_file)
     img=transforms(PIL.Image.open(img_path))
     img=img.unsqueeze(0)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
     img=img.to(device)
     pred=model(img)
+    # label_path=os.path.join('/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train/label3',img_file[:-3]+'txt')
+    # with open (label_path,'r') as f:
+    #     label=list(map(float, f.readline().strip().split(' ')))
+    # label=(label-LOW_VALUE1)/(UP_VALUE1-LOW_VALUE1)
+    # label=torch.FloatTensor(label).to(device).unsqueeze(0)
+    # loss=loss_fn(pred,label)
+    # print(img_file)
+    # print(label)
+    # print(pred)
+    # print(loss)
     pred=pred.cpu().detach().numpy().reshape(1,4)
-    pred=pred*(UP_VALUE1-LOW_VALUE1)+LOW_VALUE1
+    pred=(pred*(UP_VALUE1-LOW_VALUE1))+LOW_VALUE1
+    #break
     with open(os.path.join(dst_path,img_file[:-3]+'txt'),'w') as f:
-        f.write(str(pred))
+        f.write(str(' '.join(str(x) for x in pred[0])))
     print(img_path)

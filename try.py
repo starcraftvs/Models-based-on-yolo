@@ -52,7 +52,7 @@ config_parser = parser = argparse.ArgumentParser(description='Training Config', 
 parser.add_argument('--input_size', type=tuple, default=[488,488],
                     help='input_size default(3,244,244)')
 #batch_size
-parser.add_argument('--batch_size', type=int, default=2,
+parser.add_argument('--batch_size', type=int, default=16,
                     help='batch_size')
 #训练路径
 parser.add_argument('--train_dir', type=str, default='/home/gukai/research/pytorch-image-models/correct_images/train',
@@ -151,8 +151,10 @@ def train_reg(hyp):
     optimizer = torch.optim.SGD(model.parameters(), lr=hyp['lr0'])
     #跑多少个epoch
     i=0 #记录跑了多少iteration
-    running_loss=0
     for epoch in range(start_epoch,epochs):
+        running_loss=0
+        #每个epoch里跑了多少个epoch
+        it=0
         for batch_idx, (input, target) in enumerate(train_loader):
             last_batch = batch_idx == last_idx
             #target=torch.eye(num_classes)[target,:]
@@ -166,7 +168,8 @@ def train_reg(hyp):
             loss.backward()
             optimizer.step()
             i+=1
-            running_loss=(running_loss*(i-1)+loss.item())/(i)
+            it+=1
+            running_loss=(running_loss*(it-1)+loss.item())/(it)
             if i%100==0:
                 print(running_loss)
                 print('cur loss: ',loss.item())

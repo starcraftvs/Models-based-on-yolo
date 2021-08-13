@@ -25,14 +25,14 @@ def Gen_Class_Label(root_dir):
         for img_file in folder_path:
             img_path=os.path.join(img_file)
             with open(inf_file,'a') as f:
-                f.write(img_path+' '+label+' '+str(label))
+                f.write(img_path+' '+class_name+' '+str(label))
         return inf_file,class_file
 
 def GetImgInf(root_dir,data_dir='images',label_dir='label',data_ext='jpg',save_summary=True):    #根路径，数据路径，label路径，数据格式，是否保存所有信息在一个文件里
     info=[] #该list用于保存包含images和labels位置的字典
     #如果有label文件夹
     if label_dir:
-        #如果image和label放一个文件夹
+        #如果image和label放一个文件夹??????这边有问题
         if data_dir==label_dir:
             data_dir=os.path.join(root_dir,data_dir)
             files=os.listdir(data_dir)
@@ -49,9 +49,11 @@ def GetImgInf(root_dir,data_dir='images',label_dir='label',data_ext='jpg',save_s
             labels_img=os.listdir(label_dir)
             imgs_path=[os.path.join(data_dir,x) for x in files_img if x.endswith(data_ext)]
             labels_path=[os.path.join(label_dir,x) for x in labels_img if x.endswith('txt')]
-            for i in range(len(imgs_path)):
-                info.append({'img_path':imgs_path[i],'label_path':labels_path[i]})
-            return info
+        imgs_path.sort()
+        labels_path.sort()
+        for i in range(len(imgs_path)):
+            info.append({'img_path':imgs_path[i],'label_path':labels_path[i]})
+        return info
     #如果没有对应的label文件夹
     else:
         #生成label文件
@@ -83,7 +85,7 @@ class Reg_DataSet(Dataset):
         else:
             label=float(self.imginfs[index]['label'])
         if self.Norm:
-            label=(np.asarray(label) - LOW_VALUE1) / (UP_VALUE1 - LOW_VALUE1) + 1e-8
+            label=(np.asarray(label) - LOW_VALUE1) / (UP_VALUE1 - LOW_VALUE1)
         label=torch.FloatTensor(label)
         #获取图片
         img=cv2.imread(self.imginfs[index]['img_path'])

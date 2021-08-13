@@ -70,7 +70,7 @@ parser.add_argument('--val_dir', type=str, default='/fast_data2/India/TranData/R
 parser.add_argument('--epochs', type=int, default=10000,
                     help='epochs')
 #模型文件
-parser.add_argument('--config_file', type=str,default='models/Homography.yaml',
+parser.add_argument('--config_file', type=str,default='models/Homography2.yaml',
                     help='model config-file')
 
 #输出地址
@@ -131,6 +131,8 @@ def train_reg(hyp):
             last_epoch=int(f.readlines()[-1].strip().split(' ')[0])
         start_epoch=last_epoch+1
         #load 该epoch的模型
+        torch.cuda.set_device(args.local_rank)
+        torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:23449', rank=0, world_size=1)
         model_path=os.path.join(output_dir,str(last_epoch)+'.pth')
         model=torch.load(model_path)
         #如果不要，重新create模型
@@ -139,22 +141,22 @@ def train_reg(hyp):
         start_epoch=0
         model=Model(args.config_file)
     #设置跑训练的device
-    torch.cuda.set_device(args.local_rank)
-    if args.distributed:
-        #设置成单机多卡，暂不支持多机多卡
-        torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:23452', rank=0, world_size=1)
-        #模型进多卡
-        model.cuda(args.local_rank)
-        #多个gpu的batchnorm同步
-        model=nn.SyncBatchNorm.convert_sync_batchnorm(model)
-        model=nn.parallel.DistributedDataParallel(model,device_ids=[args.local_rank],
-                                                                        output_device=args.local_rank,
-                                                                        find_unused_parameters=False,
-                                                                        broadcast_buffers=False)
+    # torch.cuda.set_device(args.local_rank)
+    # if args.distributed:
+    #     #设置成单机多卡，暂不支持多机多卡
+    #     torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:23452', rank=0, world_size=1)
+    #     #模型进多卡
+    #     model.cuda(args.local_rank)
+    #     #多个gpu的batchnorm同步
+    #     model=nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    #     model=nn.parallel.DistributedDataParallel(model,device_ids=[args.local_rank],
+    #                                                                     output_device=args.local_rank,
+    #                                                                     find_unused_parameters=False,
+    #                                                                     broadcast_buffers=False)
         
-    else:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")        
-        model.to(device)
+    # else:
+    #     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")        
+    #     model.to(device)
 
     #获取数据，并transform
     transforms=create_transform(args.input_size)
@@ -175,8 +177,9 @@ def train_reg(hyp):
     optimizer = torch.optim.SGD(model.parameters(), lr=hyp['lr0'])
     #跑多少个epoch
     i=0 #记录跑了多少iteration
-    running_loss=0
     for epoch in range(start_epoch,epochs):
+        running_loss=0
+        it=0 #该epoch内跑了多少epcohs
         for batch_idx, (input, target) in enumerate(train_loader):
             last_batch = batch_idx == last_idx
             #target=torch.eye(num_classes)[target,:]
@@ -195,7 +198,8 @@ def train_reg(hyp):
             optimizer.step()
             loss = reduce_mean(loss, torch.distributed.get_world_size())
             i+=1
-            running_loss=(running_loss*(i-1)+loss.item())/(i)
+            it+=1
+            running_loss=(running_loss*(it-1)+loss.item())/(it)
             if i%100==0:
                 print(running_loss)
                 print('cur loss: ',loss.item())
