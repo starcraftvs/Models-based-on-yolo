@@ -1,19 +1,21 @@
 import argparse
 import sys
 import os
-def _parse_args():
+def train_parse_args():
     #获取训练的一些数据信息之类的
     config_parser = parser = argparse.ArgumentParser(description='Training Config', add_help=False)
     #有没有config文件
     # parser.add_argument('-c', '--config', default='', type=str, metavar='FILE',
     #                     help='YAML config file specifying default arguments')
-    #input_size
-    parser.add_argument('--model_path', type=str, default='/home/gukai/research/Models-based-on-yolo/models/Homography2.yaml',
+    
+    #文件config路径
+    parser.add_argument('--model_path', type=str, default='/home/gukai/research/Models-based-on-yolo/models/reg.yaml',
                         help='model config file)')
+    #input_size
     parser.add_argument('--input_size', type=tuple, default=[488,488],
                         help='input_size default(3,244,244)')
     #batch_size
-    parser.add_argument('--batch_size', type=int, default=1,
+    parser.add_argument('--batch_size', type=int, default=8,
                         help='batch_size')
     #训练路径
     parser.add_argument('--train_dir', type=str, default='/home/gukai/research/Models-based-on-yolo/datafolder/correct_images/train',
@@ -30,30 +32,18 @@ def _parse_args():
     #训练epochs
     parser.add_argument('--epochs', type=int, default=10000,
                         help='epochs')
-    #模型文件
-    parser.add_argument('--config_file', type=str,default='models/Homography.yaml',
-                        help='model config-file')
 
     #输出地址
     parser.add_argument('--output_dir', type=str,default='output/210809',
                         help='output_dir to save model')
-                    
-    #几张卡
-    parser.add_argument('--num_gpus', type=int,default=2,
-                        help='gpus used for training')
-
-    #几台服务器
-    parser.add_argument('--num_machines', type=int,default=1,
-                        help='machines used for training')
-
-    #第几台机器作为主机
-    parser.add_argument('--machine_rank', type=int,default=0,
-                        help='machine index as main')
-    port = 2 ** 15 + 2 ** 14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
+    #显卡还是cpu，哪几张卡                
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     #用于卡之间交流的一个设置
     parser.add_argument('--dist_url',
         #default='auto',
-        default="tcp://127.0.0.1:{}".format(port),
+        #default="tcp://127.0.0.1:{}".format(port),
+        #default='tcp://localhost:21440',
+        default="tcp://127.0.0.1:9998",
         help="initialization URL for pytorch distributed backend. See "
         "https://pytorch.org/docs/stable/distributed.html for details.",)
 

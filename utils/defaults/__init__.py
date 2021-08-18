@@ -1,1 +1,2 @@
-from .train_settings import _parse_args
+from .train_settings import *
+from .test_settings import *

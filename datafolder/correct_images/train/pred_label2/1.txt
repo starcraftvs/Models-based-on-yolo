@@ -1,1 +1,1 @@
-0.004926984012126923 1.0147876739501953 0.7949962615966797 -0.0003903508186340332
+tensor(0.02840, device='cuda:0', grad_fn=<UnbindBackward>) tensor(-0.11487, device='cuda:0', grad_fn=<UnbindBackward>) tensor(0.06232, device='cuda:0', grad_fn=<UnbindBackward>) tensor(-0.27612, device='cuda:0', grad_fn=<UnbindBackward>)
